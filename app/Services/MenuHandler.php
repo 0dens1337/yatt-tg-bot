@@ -11,7 +11,7 @@ class MenuHandler
 {
     public function sendMenu(int $chatId): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+        $accessToken = cache()->get("access_token_{$chatId}");
 
         if ($accessToken) {
             Telegraph::chat($chatId)

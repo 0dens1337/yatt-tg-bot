@@ -12,9 +12,9 @@ class ProjectsHandler
 {
     public function sendProjects(int $chatId, int $messageId): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+        $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/projects'); //https://yatt-dev.framework.team/api/projects
+        $response = Http::withToken($accessToken)->get(config('yatt.projects_url')); //https://yatt-dev.framework.team/api/projects
 
         if ($response->successful()) {
             $projects = $response->json('data');
@@ -40,7 +40,7 @@ class ProjectsHandler
 
     public function sendPickProjects(int $chatId, int $messageId, int $page = 1): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+        $accessToken = cache()->get("access_token_{$chatId}");
 
         $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/projects');
 

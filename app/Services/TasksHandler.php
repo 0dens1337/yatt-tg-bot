@@ -12,10 +12,9 @@ class TasksHandler
 {
     public function sendPickTasks(int $chatId, int $messageId, int $projectId, int $page = 1): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
-        logger($projectId, ['типа выбранный id проекта', $projectId]);
+        $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->get("https://yatt.framework.team/api/projects/{$projectId}/tasks");
+        $response = Http::withToken($accessToken)->get(config('yatt.projects_url') . "/projects/{$projectId}/tasks");
 
         if ($response->successful()) {
             $tasks = $response->json('data');

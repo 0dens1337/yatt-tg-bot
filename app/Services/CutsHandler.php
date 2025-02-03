@@ -12,9 +12,9 @@ class CutsHandler
 {
     public function sendCuts(int $chatId, int $messageId): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+        $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/times');
+        $response = Http::withToken($accessToken)->get(config('yatt.cuts_url'));
 
         if ($response->successful()) {
             $cuts = $response->json('data');
@@ -51,7 +51,7 @@ class CutsHandler
 
     public function sendEditLast(int $chatId, int $messageId): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+        $accessToken = cache()->get("access_token_{$chatId}");
 
         $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/times');
 

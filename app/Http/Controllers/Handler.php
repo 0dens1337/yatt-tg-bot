@@ -12,8 +12,6 @@ use App\Services\TasksHandler;
 use App\Services\TimeHandler;
 use DefStudio\Telegraph\Facades\Telegraph;
 use DefStudio\Telegraph\Handlers\WebhookHandler;
-use DefStudio\Telegraph\Keyboard\Button;
-use DefStudio\Telegraph\Keyboard\Keyboard;
 use DefStudio\Telegraph\Models\TelegraphChat;
 use Illuminate\Support\Facades\Http;
 
@@ -120,24 +118,23 @@ class Handler extends WebhookHandler
         $chatId = $this->message->chat()->id();
         $messageText = $this->message->text();
 
-        if (strpos($messageText, '/') === 0) {
+        if (str_starts_with($messageText, '/')) {
             $this->handleCommand($messageText);
             return;
         }
 
         if (preg_match('/^[^:]+:[^:]+$/', $messageText)) {
             [$email, $password] = explode(':', $messageText);
-            cache()->put("login_{$chatId}", $email, now()->addMinutes(5));
-            cache()->put("password_{$chatId}", $password, now()->addMinutes(5));
 
-            $response = Http::post('https://yatt.framework.team/api/login', [
+            $response = Http::post(config("yatt.login_url"), [
                 'email' => $email,
                 'password' => $password,
             ]);
+            logger($response);
 
             if ($response->successful()) {
                 $accessToken = $response->json('data.accessToken');
-                TelegraphChat::where('chat_id', $chatId)->update(['access_token' => $accessToken]);
+                cache()->put("access_token_{$chatId}", $accessToken, now()->addHour());
 
                 $message = "Авторизация прошла успешно! Добро пожаловать, $email!\nПиши /menu чтобы попасть в меню";
 
@@ -178,7 +175,7 @@ class Handler extends WebhookHandler
             $projectId = cache()->get("projectId_{$chatId}");
             $taskId = cache()->get("taskId_{$chatId}");
             $cutId = cache()->get("cutId_{$chatId}");
-            $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+            $accessToken = cache()->get("access_token_{$chatId}");
 
             $response = Http::withToken($accessToken)->patch("https://yatt.framework.team/api/times/{$cutId}/update-current", [
                 'project_id' => $projectId,
