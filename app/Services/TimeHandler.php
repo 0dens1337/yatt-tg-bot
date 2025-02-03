@@ -37,7 +37,7 @@ class TimeHandler
 
     public function sendEndTime(int $chatId, int $messageId): void
     {
-        $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+        $accessToken = cache()->get("access_token_{$chatId}");
 
         $response = Http::withToken($accessToken)->patch('https://yatt.framework.team/api/times/stop');
 

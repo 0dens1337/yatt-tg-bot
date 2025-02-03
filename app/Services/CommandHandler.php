@@ -17,7 +17,7 @@ class CommandHandler
         $this->menuHandler = new MenuHandler();
     }
 
-    public function commands(int $chatId, string|\Illuminate\Support\Stringable $command): void
+    public function commands(int $chatId, string $command): void
     {
         match ($command) {
             '/start' => $this->startHandler->sendStartMessage($chatId),

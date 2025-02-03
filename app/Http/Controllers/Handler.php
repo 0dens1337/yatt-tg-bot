@@ -125,16 +125,17 @@ class Handler extends WebhookHandler
 
         if (preg_match('/^[^:]+:[^:]+$/', $messageText)) {
             [$email, $password] = explode(':', $messageText);
+            cache()->put("login_{$chatId}", $email, now()->addMinutes(5));
+            cache()->put("password_{$chatId}", $password, now()->addMinutes(5));
 
-            $response = Http::post(config("yatt.login_url"), [
+            $response = Http::post(config('yatt.login_url'), [
                 'email' => $email,
                 'password' => $password,
             ]);
-            logger($response);
 
             if ($response->successful()) {
                 $accessToken = $response->json('data.accessToken');
-                cache()->put("access_token_{$chatId}", $accessToken, now()->addHour());
+                cache()->put("access_token_{$chatId}", $accessToken, now()->addMinutes(60));
 
                 $message = "Авторизация прошла успешно! Добро пожаловать, $email!\nПиши /menu чтобы попасть в меню";
 
@@ -175,7 +176,7 @@ class Handler extends WebhookHandler
             $projectId = cache()->get("projectId_{$chatId}");
             $taskId = cache()->get("taskId_{$chatId}");
             $cutId = cache()->get("cutId_{$chatId}");
-            $accessToken = cache()->get("access_token_{$chatId}");
+            $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
 
             $response = Http::withToken($accessToken)->patch("https://yatt.framework.team/api/times/{$cutId}/update-current", [
                 'project_id' => $projectId,

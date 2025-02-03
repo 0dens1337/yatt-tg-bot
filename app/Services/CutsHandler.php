@@ -13,6 +13,7 @@ class CutsHandler
     public function sendCuts(int $chatId, int $messageId): void
     {
         $accessToken = cache()->get("access_token_{$chatId}");
+        logger($accessToken);
 
         $response = Http::withToken($accessToken)->get(config('yatt.cuts_url'));
 
