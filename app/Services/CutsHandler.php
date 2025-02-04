@@ -55,6 +55,7 @@ class CutsHandler
         $accessToken = cache()->get("access_token_{$chatId}");
 
         $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/times');
+        logger($response->body());
 
         if ($response->successful()) {
             $cuts = $response->json('data');
@@ -65,6 +66,7 @@ class CutsHandler
 
                 $latestDate = $dates[0];
                 $times = $cuts[$latestDate]['times'] ?? [];
+                logger($times);
 
                 if (!empty($times)) {
                     $lastCut = $times[0];

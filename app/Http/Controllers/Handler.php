@@ -91,9 +91,13 @@ class Handler extends WebhookHandler
     }
 
 
-    public function editLast(): void
+    public function editLast(int $taskId): void
     {
-        app(CutsHandler::class)->sendEditLast($this->getCallbackChatId(), $this->getCallbackMessageId());
+        $chatId = $this->getCallbackChatId();
+
+        cache()->put("taskId_{$chatId}", $taskId, now()->addMinutes(5));
+
+        app(CutsHandler::class)->sendEditLast($chatId, $this->getCallbackMessageId());
     }
 
     public function rememberMe(): void
@@ -176,13 +180,15 @@ class Handler extends WebhookHandler
             $projectId = cache()->get("projectId_{$chatId}");
             $taskId = cache()->get("taskId_{$chatId}");
             $cutId = cache()->get("cutId_{$chatId}");
-            $accessToken = TelegraphChat::where('chat_id', $chatId)->value('access_token');
+            $accessToken = cache()->get("access_token_{$chatId}");
 
             $response = Http::withToken($accessToken)->patch("https://yatt.framework.team/api/times/{$cutId}/update-current", [
                 'project_id' => $projectId,
                 'task_id' => $taskId,
                 'description' => $description,
             ]);
+
+            logger($response->body());
 
             if ($response->successful()) {
                 $message = "Отрезок успешно обновлен!";

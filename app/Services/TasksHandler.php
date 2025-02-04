@@ -14,7 +14,10 @@ class TasksHandler
     {
         $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->get(config('yatt.projects_url') . "/projects/{$projectId}/tasks");
+        logger($projectId);
+
+        $response = Http::withToken($accessToken)->get("https://yatt.framework.team/api/projects/{$projectId}/tasks");
+        logger($response);
 
         if ($response->successful()) {
             $tasks = $response->json('data');

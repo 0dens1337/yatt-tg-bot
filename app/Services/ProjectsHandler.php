@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Project;
 use DefStudio\Telegraph\Facades\Telegraph;
 use DefStudio\Telegraph\Keyboard\Button;
 use DefStudio\Telegraph\Keyboard\Keyboard;
@@ -40,45 +41,35 @@ class ProjectsHandler
 
     public function sendPickProjects(int $chatId, int $messageId, int $page = 1): void
     {
-        $accessToken = cache()->get("access_token_{$chatId}");
+        $projects = Project::orderBy('project_id', 'asc')->get();
 
-        $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/projects');
+        $projectsPerPage = 99;
+        $totalPages = ceil($projects->count() / $projectsPerPage);
+        $offset = ($page - 1) * $projectsPerPage;
+        $projects = $projects->slice($offset, $projectsPerPage);
 
-        if ($response->successful()) {
-            $projects = $response->json('data');
-            $projectsPerPage = 5;
-            $totalPages = ceil(count($projects) / $projectsPerPage);
-            $offset = ($page - 1) * $projectsPerPage;
-            $projects = array_slice($projects, $offset, $projectsPerPage);
+        $message = 'Выберите проект:';
+        $buttons = [];
 
-            $message = 'Выберите проект или создайте:';
-            $buttons = [];
-
-            foreach ($projects as $project) {
-                $buttons[] = Button::make($project['name'])
-                    ->action('pickTask')
-                    ->param('projectId', $project['id']);
-            }
-
-            if ($page > 1) {
-                $buttons[] = Button::make('⬅️ Назад')->action('pickProject')->param('page', $page - 1);
-            }
-            if ($page < $totalPages) {
-                $buttons[] = Button::make('➡️ Далее')->action('pickProject')->param('page', $page + 1);
-            }
-
-            Telegraph::chat($chatId)
-                ->edit($messageId)
-                ->message($message)
-                ->keyboard(
-                    Keyboard::make()->buttons($buttons)
-                )->send();
-        } else {
-            Telegraph::chat($chatId)
-                ->edit($messageId)
-                ->message('Ошибка: ' . $response->json('message', 'Не удалось выполнить запрос.'))
-                ->send();
+        foreach ($projects as $project) {
+            $buttons[] = Button::make($project->name)
+                ->action('pickTask')
+                ->param('projectId', $project->project_id);
         }
+
+        if ($page > 1) {
+            $buttons[] = Button::make('⬅️ Назад')->action('pickProject')->param('page', $page - 1);
+        }
+        if ($page < $totalPages) {
+            $buttons[] = Button::make('➡️ Далее')->action('pickProject')->param('page', $page + 1);
+        }
+
+        Telegraph::chat($chatId)
+            ->edit($messageId)
+            ->message($message)
+            ->keyboard(
+                Keyboard::make()->buttons($buttons)
+            )->send();
     }
 
 }
