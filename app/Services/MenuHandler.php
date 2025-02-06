@@ -22,6 +22,7 @@ class MenuHandler
                         Button::make('Закончить')->action('endTime'),
                         Button::make('Проекты')->action('projects'),
                         Button::make('Отрезки')->action('cuts'),
+                        Button::make('Создать напоминание')->action('alarm')
                     ])
                 )->send();
         } else {

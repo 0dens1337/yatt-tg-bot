@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AlarmHandler;
+use App\Services\AlarmTimers\AfterEightHoursHandler;
+use App\Services\AlarmTimers\AfterOneHourHandler;
+use App\Services\AlarmTimers\AfterOneMinuteHandler;
 use App\Services\AuthHandler;
 use App\Services\CommandHandler;
 use App\Services\CutsHandler;
@@ -12,7 +16,6 @@ use App\Services\TasksHandler;
 use App\Services\TimeHandler;
 use DefStudio\Telegraph\Facades\Telegraph;
 use DefStudio\Telegraph\Handlers\WebhookHandler;
-use DefStudio\Telegraph\Models\TelegraphChat;
 use Illuminate\Support\Facades\Http;
 
 class Handler extends WebhookHandler
@@ -100,6 +103,26 @@ class Handler extends WebhookHandler
         app(CutsHandler::class)->sendEditLast($chatId, $this->getCallbackMessageId());
     }
 
+    public function alarm(): void
+    {
+        (new AlarmHandler())->alarm($this->getCallbackChatId(), $this->getCallbackMessageId());
+    }
+
+    public function afterOneMinute(): void
+    {
+        app(AfterOneMinuteHandler::class)->afterOneMinute($this->getCallbackChatId(), $this->getCallbackMessageId());
+    }
+
+    public function afterOneHour(): void
+    {
+        app(AfterOneHourHandler::class)->afterOneHour($this->getCallbackChatId(), $this->getCallbackMessageId());
+    }
+
+    public function afterEightHours(): void
+    {
+        app(AfterEightHoursHandler::class)->afterEightHours($this->getCallbackChatId(), $this->getCallbackMessageId());
+    }
+
     public function rememberMe(): void
     {
         $chatId = $this->getCallbackChatId();
@@ -132,7 +155,7 @@ class Handler extends WebhookHandler
             cache()->put("login_{$chatId}", $email, now()->addMinutes(5));
             cache()->put("password_{$chatId}", $password, now()->addMinutes(5));
 
-            $response = Http::post(config('yatt.login_url'), [
+            $response = Http::post('https://yatt.framework.team/api/login', [     //yatt.login_url
                 'email' => $email,
                 'password' => $password,
             ]);

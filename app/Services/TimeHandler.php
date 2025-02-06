@@ -23,6 +23,7 @@ class TimeHandler
                 ->keyboard(
                     Keyboard::make()->buttons([
                         Button::make('Закончить')->action('endTime'),
+                        Button::make('Создать напоминание?')->action('alarm'),
                         Button::make('Назад')->action('menu'),
                     ])
                 )

@@ -41,7 +41,17 @@ class ProjectsHandler
 
     public function sendPickProjects(int $chatId, int $messageId, int $page = 1): void
     {
-        $projects = Project::orderBy('project_id', 'asc')->get();
+        $accessToken = cache()->get("access_token_{$chatId}");
+
+        $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/projects');
+
+        if ($response->successful())
+        {
+            $projects = $response->json('data');
+            $this->saveProjects($projects);
+        }
+
+        $projects = Project::orderBy('project_id', 'desc')->get();
 
         $projectsPerPage = 99;
         $totalPages = ceil($projects->count() / $projectsPerPage);
@@ -70,6 +80,15 @@ class ProjectsHandler
             ->keyboard(
                 Keyboard::make()->buttons($buttons)
             )->send();
+    }
+
+    public function saveProjects(array $projects): void
+    {
+
+        foreach ($projects as $projectData)
+        {
+            Project::query()->updateOrCreate(['name' => $projectData['name'], 'project_id' => $projectData['id']]);
+        }
     }
 
 }
