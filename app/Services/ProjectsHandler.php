@@ -39,34 +39,14 @@ class ProjectsHandler
             ->send();
     }
 
-    public function sendPickProjects(int $chatId, int $messageId, int $page = 1): void
+    public function sendPickProjects(int $chatId, int $messageId): void
     {
-        $accessToken = cache()->get("access_token_{$chatId}");
+        $projectId = 103; //103 - department
+        $projectName = Project::where('project_id', $projectId)->value('name');
 
-        if (!Project::exists()) {
-            $response = Http::withToken($accessToken)->get(config('yatt.projects_url'));
-
-            if ($response->successful()) {
-                $projects = $response->json('data');
-                $this->saveProjects($projects);
-            }
-        }
-
-        $projectsPerPage = 10;
-        $projects = Project::query()->paginate($projectsPerPage, ['*'], 'page', $page);
-
-        $buttons = [];
-        foreach ($projects as $project) {
-            $buttons[] = Button::make($project->name)->action('pickTask')->param('projectId', $project->project_id);
-        }
-
-        if ($projects->currentPage() > 1) {
-            $buttons[] = Button::make('⬅️ Назад')->action('pickProject')->param('page', $page - 1);
-        }
-
-        if ($projects->hasMorePages()) {
-            $buttons[] = Button::make('➡️ Далее')->action('pickProject')->param('page', $page + 1);
-        }
+        $buttons = [
+            Button::make($projectName)->action('pickTask')->param('projectId', $projectId)
+        ];
 
         $message = "Выберите проект:";
 
@@ -87,4 +67,48 @@ class ProjectsHandler
             );
         }
     }
+
+//    public function sendPickProjects(int $chatId, int $messageId, int $page = 1): void
+//    {
+//        $accessToken = cache()->get("access_token_{$chatId}");
+//
+//        if (!Project::exists()) {
+//            $response = Http::withToken($accessToken)->get(config('yatt-dev.dev_projects'));
+//
+//            if ($response->successful()) {
+//                $projects = $response->json('data');
+//                $this->saveProjects($projects);
+//            }
+//        }
+//
+//        logger($page);
+//        $projectsPerPage = 10;
+//        $allProjects = Project::all();
+//        $totalProjects = $allProjects->count();
+//        $totalPages = ceil($totalProjects / $projectsPerPage);
+//
+//        $projects = $allProjects->slice(($page - 1) * $projectsPerPage, $projectsPerPage);
+//
+//        $buttons = [];
+//        foreach ($projects as $project) {
+//            $buttons[] = Button::make($project->name)->action('pickTask')->param('projectId', $project->project_id);
+//        }
+//
+//        if ($page > 1) {
+//            $buttons[] = Button::make('⬅️ Назад')->action('pickProject')->param('page', $page - 1);
+//        }
+//
+//        if ($page < $totalPages) {
+//            $buttons[] = Button::make('➡️ Далее')->action('pickProject')->param('page', $page + 1);
+//        }
+//
+//        $message = "Выберите проект:";
+//
+//        Telegraph::chat($chatId)
+//            ->edit($messageId)
+//            ->message($message)
+//            ->keyboard(
+//                Keyboard::make()->buttons($buttons)
+//            )->send();
+//    }
 }

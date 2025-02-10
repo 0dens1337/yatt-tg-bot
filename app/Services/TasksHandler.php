@@ -14,14 +14,14 @@ class TasksHandler
     {
         $accessToken = cache()->get("access_token_{$chatId}");
 
-        logger($projectId);
+        logger($page);
 
         $response = Http::withToken($accessToken)->get("https://yatt.framework.team/api/projects/{$projectId}/tasks");
         logger($response);
 
         if ($response->successful()) {
             $tasks = $response->json('data');
-            $taskPerPage = 5;
+            $taskPerPage = 99;
             $totalPages = ceil(count($tasks) / $taskPerPage);
             $offset = ($page - 1) * $taskPerPage;
             $tasks = array_slice($tasks, $offset, $taskPerPage);
