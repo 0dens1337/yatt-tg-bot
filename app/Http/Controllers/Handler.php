@@ -7,7 +7,6 @@ use App\Services\AlarmTimers\AfterEightHoursHandler;
 use App\Services\AlarmTimers\AfterOneHourHandler;
 use App\Services\AlarmTimers\AfterOneMinuteHandler;
 use App\Services\AuthHandler;
-use App\Services\CommandHandler;
 use App\Services\CutsHandler;
 use App\Services\MenuHandler;
 use App\Services\ProjectsHandler;
@@ -20,6 +19,17 @@ use Illuminate\Support\Facades\Http;
 
 class Handler extends WebhookHandler
 {
+    private StartHandler $startHandler;
+    private AuthHandler $authHandler;
+    private MenuHandler $menuHandler;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->startHandler = new StartHandler();
+        $this->authHandler = new AuthHandler();
+        $this->menuHandler = new MenuHandler();
+    }
 
     public function getChatId(): string
     {
@@ -53,7 +63,7 @@ class Handler extends WebhookHandler
 
     public function menu(): void
     {
-        (new MenuHandler())->sendMenu($this->message ? $this->getChatId() : ($this->getCallbackChatId()));
+        (new MenuHandler())->sendMenu($this->message ? $this->getChatId() : ($this->getCallbackChatId()), $this->message ? $this->getMessageId() : $this->getCallbackMessageId());
     }
 
     public function projects(): void
@@ -78,10 +88,7 @@ class Handler extends WebhookHandler
 
     public function pickProject(): void
     {
-        (new ProjectsHandler())->sendPickProjects(
-            $this->getCallbackChatId(),
-            $this->getCallbackMessageId()
-        );
+        (new ProjectsHandler())->sendPickProjects($this->getCallbackChatId(), $this->getCallbackMessageId());
     }
 
     public function pickTask(int $projectId): void
@@ -155,7 +162,7 @@ class Handler extends WebhookHandler
             cache()->put("login_{$chatId}", $email, now()->addMinutes(5));
             cache()->put("password_{$chatId}", $password, now()->addMinutes(5));
 
-            $response = Http::post('https://yatt.framework.team/api/login', [     //yatt.login_url
+            $response = Http::post(config('yatt.login_url'), [
                 'email' => $email,
                 'password' => $password,
             ]);
@@ -181,15 +188,19 @@ class Handler extends WebhookHandler
             Telegraph::chat($chatId)
                 ->sticker('CAACAgIAAxkBAAIDk2eXnrR0uCBGKNQcGgy1JJXw0-YjAAIKGQACsd_gS38AAdwhgrIKAAE2BA')
                 ->send();
-        } else {
+        } else{
             $this->handleEditLastMessage();
         }
     }
 
     protected function handleCommand(string|\Illuminate\Support\Stringable $command): void
     {
-        $chatId = $this->getChatId();
-        app(CommandHandler::class)->commands($chatId, $command);
+        match ($command) {
+            '/start' => $this->startHandler->sendStartMessage($this->getChatId()),
+            '/auth' => $this->authHandler->sendAuthMessage($this->getChatId()),
+            '/menu' => $this->menuHandler->sendMenu($this->getChatId()),
+            default => parent::handleCommand($command),
+        };
     }
 
     public function handleEditLastMessage(): void
@@ -211,17 +222,19 @@ class Handler extends WebhookHandler
                 'description' => $description,
             ]);
 
-            logger($response->body());
+            match ($response->successful())
+            {
+                true => $message = "Отрезок успешно обновлен!",
+                false => $message = "Ошибка обновления: " . $response->json('message', 'Не удалось выполнить запрос.'),
 
-            if ($response->successful()) {
-                $message = "Отрезок успешно обновлен!";
-            } else {
-                $message = "Ошибка обновления: " . $response->json('message', 'Не удалось выполнить запрос.');
-            }
+            };
 
             Telegraph::chat($chatId)
                 ->message($message)
                 ->send();
+
+            $this->menu();
+
         } else {
             parent::handleMessage();
         }

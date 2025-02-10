@@ -14,7 +14,7 @@ class TimeHandler
     {
         $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->patch('https://yatt.framework.team/api/times/start');
+        $response = Http::withToken($accessToken)->patch(config('yatt.cut_start'));
 
         if ($response->successful()) {
             Telegraph::chat($chatId)
@@ -40,7 +40,7 @@ class TimeHandler
     {
         $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->patch('https://yatt.framework.team/api/times/stop');
+        $response = Http::withToken($accessToken)->patch(config('yatt.cut_stop'));
 
         if ($response->successful()) {
             Telegraph::chat($chatId)

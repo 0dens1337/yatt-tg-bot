@@ -14,6 +14,7 @@ services:
   nginx:
     container_name: 'nginx'
     image: nginx:1.25.5-alpine
+    restart: always
     ports:
       - "8877:8877"
     volumes:
@@ -21,6 +22,7 @@ services:
       - ./docker/web-server:/etc/nginx/conf.d
   php:
     container_name: 'php'
+    restart: always
     build:
       context: ./docker/php
       args:

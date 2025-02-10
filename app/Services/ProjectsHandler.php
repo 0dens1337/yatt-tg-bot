@@ -43,36 +43,32 @@ class ProjectsHandler
     {
         $accessToken = cache()->get("access_token_{$chatId}");
 
-        $response = Http::withToken($accessToken)->get('https://yatt.framework.team/api/projects');
+        if (!Project::exists()) {
+            $response = Http::withToken($accessToken)->get(config('yatt.projects_url'));
 
-        if ($response->successful())
-        {
-            $projects = $response->json('data');
-            $this->saveProjects($projects);
+            if ($response->successful()) {
+                $projects = $response->json('data');
+                $this->saveProjects($projects);
+            }
         }
 
-        $projects = Project::orderBy('project_id', 'desc')->get();
+        $projectsPerPage = 10;
+        $projects = Project::query()->paginate($projectsPerPage, ['*'], 'page', $page);
 
-        $projectsPerPage = 99;
-        $totalPages = ceil($projects->count() / $projectsPerPage);
-        $offset = ($page - 1) * $projectsPerPage;
-        $projects = $projects->slice($offset, $projectsPerPage);
-
-        $message = 'Выберите проект:';
         $buttons = [];
-
         foreach ($projects as $project) {
-            $buttons[] = Button::make($project->name)
-                ->action('pickTask')
-                ->param('projectId', $project->project_id);
+            $buttons[] = Button::make($project->name)->action('pickTask')->param('projectId', $project->project_id);
         }
 
-        if ($page > 1) {
+        if ($projects->currentPage() > 1) {
             $buttons[] = Button::make('⬅️ Назад')->action('pickProject')->param('page', $page - 1);
         }
-        if ($page < $totalPages) {
+
+        if ($projects->hasMorePages()) {
             $buttons[] = Button::make('➡️ Далее')->action('pickProject')->param('page', $page + 1);
         }
+
+        $message = "Выберите проект:";
 
         Telegraph::chat($chatId)
             ->edit($messageId)
@@ -84,11 +80,11 @@ class ProjectsHandler
 
     public function saveProjects(array $projects): void
     {
-
-        foreach ($projects as $projectData)
-        {
-            Project::query()->updateOrCreate(['name' => $projectData['name'], 'project_id' => $projectData['id']]);
+        foreach ($projects as $projectData) {
+            Project::updateOrCreate(
+                ['project_id' => $projectData['id']],
+                ['name' => $projectData['name']]
+            );
         }
     }
-
 }
