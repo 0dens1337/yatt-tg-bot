@@ -2,7 +2,7 @@ services:
   postgres:
     container_name: postgres
     image: postgres:16
-    restart: always
+    restart: unless-stopped
     ports:
       - "${DOCKER_DB_PORT}:5432"
     environment:
@@ -14,7 +14,7 @@ services:
   nginx:
     container_name: 'nginx'
     image: nginx:1.25.5-alpine
-    restart: always
+    restart: unless-stopped
     ports:
       - "8877:8877"
     volumes:
@@ -22,7 +22,7 @@ services:
       - ./docker/web-server:/etc/nginx/conf.d
   php:
     container_name: 'php'
-    restart: always
+    restart: unless-stopped
     build:
       context: ./docker/php
       args:
